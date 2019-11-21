@@ -44,7 +44,7 @@
             /**
              * @param object $field Row in "information_schema.COLUMNS"
              */
-            public function getStatusEnumerates($field)
+            public function getStatusEnums($field)
             {
                 return [
                     'normal' => [
