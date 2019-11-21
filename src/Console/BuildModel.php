@@ -1,6 +1,6 @@
 <?php
 
-namespace Faravel\Console;
+namespace ModelHelper\Console;
 
 use Composer\Autoload\ClassMapGenerator;
 use Illuminate\Console\Command;
@@ -14,7 +14,7 @@ class BuildModel extends Command
      *
      * @var string
      */
-    protected $signature = 'faravel:build-model {--table-const-name= : 生成表名的常量名称（为空则不生成表常量）} 
+    protected $signature = 'lee2son:build-model {--table-const-name= : 生成表名的常量名称（为空则不生成表常量）} 
                                                 {--gen-field-name : 是否生成字段名常量（tableName.fieldName）}
                                                 {--field-name-prefix= : 字段名常量前缀}
                                                 {--gen-field-shortname : 是否生成字段短名常量}
