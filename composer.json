@@ -1,0 +1,36 @@
+{
+    "name": "lee2son/build-model",
+    "description": "对所有继承自`Illuminate\Database\Eloquent\Model`的类，读取其表结构，并生成相关代码",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "lixx",
+            "email": "sss60@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1.0",
+        "predis/predis": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "ModelHelper\\": "src/"
+        },
+        "files": [
+        
+        ]
+    },
+    "require-dev": {
+        "laravel/framework": "5.8.*",
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Faravel\\BuildModelServiceProvider",
+            ],
+            "aliases": {
+
+            }
+        }
+    }
+}
