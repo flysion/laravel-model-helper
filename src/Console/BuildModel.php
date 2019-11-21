@@ -132,6 +132,7 @@ generate:
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
      * @param $field
+     * @return array
      */
     protected function handleEnum($model, $field)
     {
@@ -358,7 +359,7 @@ generate:
         $lines[] = " * Field name by {$field->COLUMN_NAME}";
         $lines[] = " * {$field->COLUMN_COMMENT}";
         $lines[] = " */";
-        $lines[] = "const {$prefix}{$codeName} = '{$tableName}.{$field->COLUMN_NAME}';";
+        $lines[] = "const {$prefix}{$constName} = '{$tableName}.{$field->COLUMN_NAME}';";
 
         return $this->genCode($lines, "\t");
     }
@@ -378,7 +379,7 @@ generate:
         $lines[] = " * Field shortname by {$field->COLUMN_NAME}";
         $lines[] = " * {$field->COLUMN_COMMENT}";
         $lines[] = " */";
-        $lines[] = "const {$prefix}{$codeName} = '{$field->COLUMN_NAME}';";
+        $lines[] = "const {$prefix}{$constName} = '{$field->COLUMN_NAME}';";
 
         return $this->genCode($lines, "\t");
     }
