@@ -1,6 +1,6 @@
 {
     "name": "lee2son/build-model",
-    "description": "对所有继承自`Illuminate\Database\Eloquent\Model`的类，读取其表结构，并生成相关代码",
+    "description": "对所有继承自 Illuminate\Database\Eloquent\Model 的类，读取其表结构，并生成相关代码",
     "license": "MIT",
     "authors": [
         {
