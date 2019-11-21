@@ -20,12 +20,12 @@
         ]
     },
     "require-dev": {
-
+        "laravel/framework": "5.8.*"
     },
     "extra": {
         "laravel": {
             "providers": [
-                "ModelHelper\\ModelHelperServiceProvider",
+                "ModelHelper\\ModelHelperServiceProvider"
             ],
             "aliases": {
 
