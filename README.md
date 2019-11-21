@@ -37,7 +37,7 @@
         $user = User::whereWhereStatusNormal()->first();
         dd($user->isStatusNormal());
 
-    同时把枚举说明生成语言包放在：`resources/lang/<locale>/table.php`。可通过在 model 中实现`getFieldNameEnums`方法或`Enums`来定制枚举（默认情况下只处理 enum 类型的字段）：
+    同时把枚举说明生成语言包放在：`resources/lang/<locale>/table.php`。可通过在 model 中实现`get<FieldName>Enums`方法或`getEnums`来定制枚举（默认情况下只处理 enum 类型的字段）：
     
         class User extends Illuminate\Database\Eloquent\Model
         {
