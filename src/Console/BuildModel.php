@@ -71,7 +71,6 @@ class BuildModel extends Command
             $model = $classReflection->newInstance();
 
             $classShortName = $classReflection->getShortName();
-            $connectionName = $model->getConnectionName();
             $databaseName = $model->getConnection()->getDatabaseName();
             $tableName = $model->getTable();
 
