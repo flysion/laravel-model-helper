@@ -76,6 +76,3 @@
           --field-enum-prefix[=FIELD-ENUM-PREFIX]            枚举常量前缀
           --const-name-style[=CONST-NAME-STYLE]              常量命名风格 camel:首字母小写驼峰 Camel:首字母大写驼峰 snake:小写下划线 SNAKE:大写下划线
           --reset                                            重置（还原）
-
-### 扩展 model
-使你的 model 继承自 `\Faravel\Database\Eloquent\Model` 即可
