@@ -4,7 +4,7 @@ namespace ModelHelper;
 
 use Illuminate\Support\ServiceProvider;
 
-class FaravelServiceProvider extends ServiceProvider
+class ModelHelperServiceProvider extends ServiceProvider
 {
     protected $commands = [
         \ModelHelper\Console\BuildModel::class,
