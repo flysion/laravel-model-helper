@@ -1,0 +1,32 @@
+{
+    "name": "lee2son/model-helper",
+    "description": "对所有继承自 Illuminate\\Database\\Eloquent\\Model 的类，读取其表结构，并生成相关代码",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "lixx",
+            "email": "sss60@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ModelHelper\\": "src/"
+        }
+    },
+    "require-dev": {
+        "laravel/framework": "5.8.13"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ModelHelper\\ModelHelperServiceProvider"
+            ],
+            "aliases": {
+
+            }
+        }
+    }
+}
