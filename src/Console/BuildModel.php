@@ -15,12 +15,13 @@ class BuildModel extends Command
      * @var string
      */
     protected $signature = 'lee2son:build-model {--table-const-name= : 生成表名的常量名称（为空则不生成表常量）} 
-                                                {--gen-field-name : 是否生成字段名常量（tableName.fieldName）}
-                                                {--field-name-prefix= : 字段名常量前缀}
-                                                {--gen-field-shortname : 是否生成字段短名常量}
-                                                {--field-shortname-prefix= : 字段短名常量前缀}
-                                                {--gen-field-enum : 是否生成字段枚举常量}
-                                                {--field-enum-prefix= : 枚举常量前缀}
+                                                {--gen-column-name : 是否生成字段名常量（tableName.columnName）}
+                                                {--column-name-prefix= : 字段名常量前缀}
+                                                {--gen-column-shortname : 是否生成字段短名常量}
+                                                {--column-shortname-prefix= : 字段短名常量前缀}
+                                                {--gen-column-enum : 是否生成字段枚举常量}
+                                                {--column-enum-prefix= : 枚举常量前缀}
+                                                {--gen-columns : 生成所有字段的信息}
                                                 {--const-name-style= : 常量命名风格 camel:首字母小写驼峰 Camel:首字母大写驼峰 snake:小写下划线 SNAKE:大写下划线}
                                                 {--reset : 重置（还原）}';
 
@@ -32,9 +33,9 @@ class BuildModel extends Command
     protected $description = '对 Model 进行代码生成';
 
     /**
-     * @var array 存放枚举字段说明
+     * @var array 语言包
      */
-    protected $enumTable = [];
+    protected $languages = [];
 
     /**
      * Execute the console command.
@@ -43,17 +44,19 @@ class BuildModel extends Command
     public function handle()
     {
         $tableConstName = $this->option('table-const-name', null);
-        $isGenFieldEnum = $this->option('gen-field-enum');
+        $isGenColumnEnum = $this->option('gen-column-enum');
 
-        $isGenFieldName = $this->option('gen-field-name', false);
-        $fieldNamePrefix = $this->option('field-name-prefix', '');
+        $isGenColumnName = $this->option('gen-column-name', false);
+        $columnNamePrefix = $this->option('column-name-prefix', '');
 
-        $isGenFieldShortname = $this->option('gen-field-shortname', false);
-        $fieldShortnamePrefix = $this->option('field-shortname-prefix', '');
+        $isGenColumnShortname = $this->option('gen-column-shortname', false);
+        $columnShortnamePrefix = $this->option('column-shortname-prefix', '');
+
+        $isGenColumns = $this->option('gen-columns', false);
 
         foreach(ClassMapGenerator::createMap(app_path()) as $className => $classFile)
         {
-            $constants = $methods = [];
+            $constants = $methods = $columns = [];
 
             // 重置
 
@@ -79,32 +82,45 @@ class BuildModel extends Command
             }
 
             $sql = "SELECT * FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?";
-            $fields = $model->getConnection()->select($sql, [$databaseName, $tableName]);
-            foreach($fields as $field)
+            foreach($model->getConnection()->select($sql, [$databaseName, $tableName]) as $column)
             {
                 $builder = get_class($model->newModelQuery());
 
-                if($isGenFieldEnum) {
-                    foreach($this->handleEnum($model, $field) as $enum) {
-                        $constants[] = $this->genEnumConstCode($enum);
-                        $methods[] = $this->genEnumWhereMethodCode($enum, $builder);
-                        $methods[] = $this->genEnumIsMethodCode($enum);
+                if($isGenColumnEnum) {
+                    foreach($this->handleColumnEnum($model, $column) as $enum) {
+                        $constants[] = $this->genColumnEnumConstCode($enum);
+                        $methods[] = $this->genColumnEnumWhereMethodCode($enum, $builder);
+                        $methods[] = $this->genColumnEnumIsMethodCode($enum);
                     }
                 }
 
-                if($isGenFieldName) {
-                    $constants[] = $this->genFieldConstCode($field, $fieldNamePrefix, $tableName);
+                if($isGenColumnName) {
+                    $constants[] = $this->genColumnConstCode($column, $columnNamePrefix, $tableName);
                 }
 
-                if($isGenFieldShortname) {
-                    $constants[] = $this->genFieldShortNameConstCode($field, $fieldShortnamePrefix);
+                if($isGenColumnShortname) {
+                    $constants[] = $this->genColumnShortNameConstCode($column, $columnShortnamePrefix);
+                }
+
+                if($isGenColumns) {
+                    $columns[$column->COLUMN_NAME] = array_merge([
+                        'data_type' => $column->DATA_TYPE,
+                    ], $this->genColumnInfo($model, $column) ?: ['title' => strtoupper($column->COLUMN_NAME), 'desc' => $column->COLUMN_COMMENT]);
                 }
             }
 
 generate:
+
             $code = file_get_contents($classFile);
             if(!$code) continue;
-
+            $code = preg_replace('%#generated-columns-code-block.*?#generated-columns-code-block\n\n%s', '', $code);
+            if(count($columns)) {
+                $columnsCode = implode("\n", array_map(function($line) {
+                    return "\t". $line;
+                }, explode("\n", var_export($columns, true))));
+                $columnsCode = "#generated-columns-code-block\n\n\tpublic static \$allColumn ={$columnsCode};\n\n#generated-columns-code-block";
+                $code = preg_replace('%\bclass\s+'.$classShortName.'\b.*?\{\n*%s', "\\0{$columnsCode}\n\n", $code);
+            }
 
             $code = preg_replace('%#generated-const-code-block.*?#generated-const-code-block\n\n%s', '', $code);
             if(count($constants)) {
@@ -123,37 +139,37 @@ generate:
             file_put_contents($classFile, $code);
         }
 
-        foreach($this->enumTable as $locale => $data) {
+        foreach($this->languages as $locale => $data) {
             file_put_contents(resource_path("lang/{$locale}/table.php"), "<?php\nreturn " . var_export($data, true) . ';');
         }
     }
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
-     * @param $field
+     * @param $column
      * @return array
      */
-    protected function handleEnum($model, $field)
+    protected function handleColumnEnum($model, $column)
     {
         $data = [];
 
-        $method = Str::camel(implode('_', ['get', $field->COLUMN_NAME, 'Enums']));
+        $method = Str::camel(implode('_', ['get', $column->COLUMN_NAME, 'ColumnEnums']));
         if(method_exists($model, $method)) {
-            $enums = call_user_func([$model, $method], $field);
-        } elseif($field->DATA_TYPE === 'enum') {
-            $enums = call_user_func([$model, 'getEnums'], $field);
+            $enums = call_user_func([$model, $method], $column);
+        } elseif($column->DATA_TYPE === 'enum' && method_exists($model, 'getColumnEnums')) {
+            $enums = call_user_func([$model, 'getColumnEnums'], $column);
         } else {
             return [];
         }
 
         foreach($enums as $value => $attr) {
             $enum = [
-                'name' => $this->option('field-enum-prefix') . $this->name($field->COLUMN_NAME, $attr['as'] ?? $value),
+                'name' => $this->option('column-enum-prefix') . $this->name($column->COLUMN_NAME, $attr['as'] ?? $value),
                 'value' => $value,
-                'field' => $field,
-                'column' => $field->COLUMN_NAME,
+                'column' => $column,
+                'column' => $column->COLUMN_NAME,
                 'comment' => '',
-                'description' => $field->COLUMN_COMMENT,
+                'description' => $column->COLUMN_COMMENT,
                 'deprecated' => $attr['deprecated'] ?? false,
             ];
 
@@ -165,7 +181,7 @@ generate:
                         $locale,
                         $model->getConnectionName(),
                         $model->getTable(),
-                        $field->COLUMN_NAME,
+                        $column->COLUMN_NAME,
                         $value,
                         $comment
                     );
@@ -177,7 +193,7 @@ generate:
                     config('app.locale'),
                     $model->getConnectionName(),
                     $model->getTable(),
-                    $field->COLUMN_NAME,
+                    $column->COLUMN_NAME,
                     $value,
                     $attr['comment']
                 );
@@ -202,24 +218,24 @@ generate:
      */
     protected function appendEnumTable($locale, $connectionName, $tableName, $columnName, $value, $comment)
     {
-        if(!isset($this->enumTable[$locale])) {
-            $this->enumTable[$locale] = [];
+        if(!isset($this->languages[$locale])) {
+            $this->languages[$locale] = [];
         }
 
-        if(!isset($this->enumTable[$locale][$connectionName])) {
-            $this->enumTable[$locale][$connectionName] = [];
+        if(!isset($this->languages[$locale][$connectionName])) {
+            $this->languages[$locale][$connectionName] = [];
         }
 
-        if(!isset($this->enumTable[$locale][$connectionName][$tableName])) {
-            $this->enumTable[$locale][$connectionName][$tableName] = [];
+        if(!isset($this->languages[$locale][$connectionName][$tableName])) {
+            $this->languages[$locale][$connectionName][$tableName] = [];
         }
 
 
-        if(!isset($this->enumTable[$locale][$connectionName][$tableName][$columnName])) {
-            $this->enumTable[$locale][$connectionName][$tableName][$columnName] = [];
+        if(!isset($this->languages[$locale][$connectionName][$tableName][$columnName])) {
+            $this->languages[$locale][$connectionName][$tableName][$columnName] = [];
         }
 
-        $this->enumTable[$locale][$connectionName][$tableName][$columnName][$value] = $comment;
+        $this->languages[$locale][$connectionName][$tableName][$columnName][$value] = $comment;
     }
 
     /**
@@ -276,7 +292,7 @@ generate:
      * @param $enum
      * @return string
      */
-    protected function genEnumConstCode($enum)
+    protected function genColumnEnumConstCode($enum)
     {
         $lines = [];
         $lines[] = "/**";
@@ -297,7 +313,7 @@ generate:
      * @param string $builder
      * @return string
      */
-    protected function genEnumWhereMethodCode($enum, $builder)
+    protected function genColumnEnumWhereMethodCode($enum, $builder)
     {
         $methodName = Str::camel(implode('_', ['scope', 'where', $enum['column'], $enum['value']]));
 
@@ -322,7 +338,7 @@ generate:
      * @param $enum
      * @return string
      */
-    protected function genEnumIsMethodCode($enum)
+    protected function genColumnEnumIsMethodCode($enum)
     {
         $methodName = Str::camel(implode('_', ['is', $enum['column'], $enum['value']]));
 
@@ -344,42 +360,60 @@ generate:
 
     /**
      * 生成字段的常量定义
-     * @param $field
+     * @param $column
      * @param $prefix
      * @param $tableName
      * @return string
      */
-    protected function genFieldConstCode($field, $prefix, $tableName)
+    protected function genColumnConstCode($column, $prefix, $tableName)
     {
-        $constName = $this->name($field->COLUMN_NAME);
+        $constName = $this->name($column->COLUMN_NAME);
 
         $lines = [];
         $lines[] = "/**";
-        $lines[] = " * Field name by {$field->COLUMN_NAME}";
-        $lines[] = " * {$field->COLUMN_COMMENT}";
+        $lines[] = " * Column name by {$column->COLUMN_NAME}";
+        $lines[] = " * {$column->COLUMN_COMMENT}";
         $lines[] = " */";
-        $lines[] = "const {$prefix}{$constName} = '{$tableName}.{$field->COLUMN_NAME}';";
+        $lines[] = "const {$prefix}{$constName} = '{$tableName}.{$column->COLUMN_NAME}';";
 
         return $this->genCode($lines, "\t");
     }
 
     /**
      * 生成字段的短名字常量定义
-     * @param $field
+     * @param $column
      * @param $prefix
      * @return string
      */
-    protected function genFieldShortNameConstCode($field, $prefix)
+    protected function genColumnShortNameConstCode($column, $prefix)
     {
-        $constName = $this->name($field->COLUMN_NAME);
+        $constName = $this->name($column->COLUMN_NAME);
 
         $lines = [];
         $lines[] = "/**";
-        $lines[] = " * Field shortname by {$field->COLUMN_NAME}";
-        $lines[] = " * {$field->COLUMN_COMMENT}";
+        $lines[] = " * Column shortname by {$column->COLUMN_NAME}";
+        $lines[] = " * {$column->COLUMN_COMMENT}";
         $lines[] = " */";
-        $lines[] = "const {$prefix}{$constName} = '{$field->COLUMN_NAME}';";
+        $lines[] = "const {$prefix}{$constName} = '{$column->COLUMN_NAME}';";
 
         return $this->genCode($lines, "\t");
+    }
+
+    /**
+     * 获取表的栏目信息
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param $column
+     * @return array
+     */
+    protected function genColumnInfo($model, $column)
+    {
+        $method = Str::camel(implode('_', ['get', $column->COLUMN_NAME, 'ColumnInfo']));
+        if(method_exists($model, $method)) {
+            return call_user_func([$model, $method], $column);
+        } elseif(method_exists($model, 'getColumnInfo')) {
+            return call_user_func([$model, 'getColumnInfo'], $column);
+        } else {
+            return;
+        }
     }
 }
