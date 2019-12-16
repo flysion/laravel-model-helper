@@ -118,7 +118,7 @@ generate:
                 $columnsCode = implode("\n", array_map(function($line) {
                     return "\t". $line;
                 }, explode("\n", var_export($columns, true))));
-                $columnsCode = "#generated-columns-code-block\n\n\tpublic static \$allColumn ={$columnsCode};\n\n#generated-columns-code-block";
+                $columnsCode = "#generated-columns-code-block\n\n\tpublic static \$columns ={$columnsCode};\n\n#generated-columns-code-block";
                 $code = preg_replace('%\bclass\s+'.$classShortName.'\b.*?\{\n*%s', "\\0{$columnsCode}\n\n", $code);
             }
 
