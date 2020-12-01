@@ -1,5 +1,5 @@
 {
-    "name": "lee2son/model-helper",
+    "name": "flysion/model-helper",
     "description": "对所有继承自 Illuminate\\Database\\Eloquent\\Model 的类，读取其表结构，并生成相关代码",
     "license": "MIT",
     "authors": [
