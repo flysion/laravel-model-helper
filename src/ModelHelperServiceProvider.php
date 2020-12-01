@@ -1,6 +1,6 @@
 <?php
 
-namespace ModelHelper;
+namespace Flysion\ModelHelper;
 
 use Illuminate\Support\ServiceProvider;
 
