@@ -1,5 +1,5 @@
 {
-    "name": "flysion/model-helper",
+    "name": "flysion/laravel-model-helper",
     "description": "对所有继承自 Illuminate\\Database\\Eloquent\\Model 的类，读取其表结构，并生成相关代码",
     "license": "MIT",
     "authors": [
@@ -13,7 +13,7 @@
     },
     "autoload": {
         "psr-4": {
-            "ModelHelper\\": "src/"
+            "Flysion\\ModelHelper\\": "src/"
         }
     },
     "require-dev": {
@@ -22,7 +22,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "ModelHelper\\ModelHelperServiceProvider"
+                "Flysion\\ModelHelper\\ModelHelperServiceProvider"
             ],
             "aliases": {
 
